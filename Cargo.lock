@@ -6581,6 +6581,7 @@ dependencies = [
  "hex",
  "monero-address",
  "monero-daemon-rpc",
+ "monero-interface",
  "monero-oxide-ext",
  "monero-simple-request-rpc",
  "monero-sys",
@@ -10846,6 +10847,7 @@ version = "4.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "backoff",
  "bitcoin 0.32.8",
  "bitcoin-wallet",
  "curve25519-dalek-ng",

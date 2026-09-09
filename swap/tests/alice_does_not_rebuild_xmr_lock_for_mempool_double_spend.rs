@@ -74,7 +74,7 @@ async fn alice_does_not_rebuild_xmr_lock_for_mempool_double_spend() {
                 Duration::from_secs(45),
                 alice::run_until(
                     alice_swap,
-                    |state| matches!(state, AliceState::BtcLocked { .. }),
+                    |state| matches!(state, AliceState::XmrReadyToLock { .. }),
                     FixedRate::default(),
                 ),
             )

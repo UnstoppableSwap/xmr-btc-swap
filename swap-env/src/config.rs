@@ -84,6 +84,7 @@ pub struct Monero {
     /// attacker controls your node and you set this to true, they might be able to
     /// steal your funds.
     #[serde(default)]
+    // Validated by validate_config: trust requires an explicitly configured daemon_url.
     pub trusted_daemon: bool,
 }
 
@@ -356,6 +357,10 @@ pub const MIN_BTC_REDEEM_FEE_MULTIPLIER: Decimal = Decimal::from_parts(1, 0, 0, 
 pub const MAX_BTC_REDEEM_FEE_MULTIPLIER: Decimal = Decimal::from_parts(10, 0, 0, false, 0); // 10
 
 pub fn validate_config(config: &Config, env_config: crate::env::Config) -> Result<()> {
+    if config.monero.trusted_daemon && config.monero.daemon_url.is_none() {
+        bail!("monero.trusted_daemon requires an explicit monero.daemon_url; automatically selected public nodes cannot be trusted");
+    }
+
     if config.monero.network != env_config.monero_network {
         bail!(
             "Expected monero network in config file to be {:?} but was {:?}",

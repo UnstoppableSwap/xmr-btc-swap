@@ -36,7 +36,12 @@ async fn alice_rebuilds_xmr_lock_after_confirmed_double_spend() {
             )
             .await?;
 
-            let AliceState::XmrLockTransactionConstructed { xmr_lock_tx, .. } = &alice_state else {
+            let AliceState::XmrLockTransactionConstructed {
+                xmr_lock_tx,
+                monero_wallet_restore_blockheight: original_restore_height,
+                ..
+            } = &alice_state
+            else {
                 bail!("Expected XmrLockTransactionConstructed, got {alice_state}");
             };
 
@@ -68,6 +73,28 @@ async fn alice_rebuilds_xmr_lock_after_confirmed_double_spend() {
             // the lock transaction from scratch and complete the swap. The
             // original lock transaction can never confirm (its inputs are
             // spent), so a completed swap proves the rebuild happened.
+            ctx.restart_alice().await;
+            let alice_swap = ctx.alice_next_swap().await;
+            let rebuilt_state = alice::run_until(
+                alice_swap,
+                |state| {
+                    matches!(
+                        state,
+                        AliceState::XmrReadyToLock { .. } | AliceState::BtcLocked { .. }
+                    )
+                },
+                FixedRate::default(),
+            )
+            .await?;
+            let AliceState::XmrReadyToLock {
+                monero_wallet_restore_blockheight,
+                ..
+            } = rebuilt_state
+            else {
+                bail!("Expected rebuild to preserve restore height via XmrReadyToLock, got {rebuilt_state}");
+            };
+            assert_eq!(monero_wallet_restore_blockheight, *original_restore_height);
+
             ctx.restart_alice().await;
             let alice_swap = ctx.alice_next_swap().await;
             let alice_state = alice::run(alice_swap, FixedRate::default()).await?;

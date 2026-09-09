@@ -53,7 +53,7 @@ async fn alice_does_not_rebuild_xmr_lock_with_untrusted_daemon() {
         let alice_swap = ctx.alice_next_swap().await;
 
         // `run_until` stops at the first matching state: if Alice ever rebuilds
-        // (BtcLocked), the assertion below fails. With an untrusted daemon she
+        // (XmrReadyToLock), the assertion below fails. With an untrusted daemon she
         // must ignore the reported double spend and keep trying to publish the
         // original lock transaction until the cancel timelock expires.
         let alice_state = alice::run_until(
@@ -62,7 +62,7 @@ async fn alice_does_not_rebuild_xmr_lock_with_untrusted_daemon() {
                 matches!(
                     state,
                     AliceState::WaitingForCancelTimelockExpiration { .. }
-                        | AliceState::BtcLocked { .. }
+                        | AliceState::XmrReadyToLock { .. }
                 )
             },
             FixedRate::default(),

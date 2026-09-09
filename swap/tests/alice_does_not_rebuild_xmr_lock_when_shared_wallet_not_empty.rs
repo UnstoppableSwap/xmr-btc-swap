@@ -72,6 +72,7 @@ async fn alice_does_not_rebuild_xmr_lock_when_shared_wallet_not_empty() {
                     state3.v,
                     *monero_wallet_restore_blockheight,
                     None,
+                    None,
                 )
                 .await
         })
@@ -81,7 +82,7 @@ async fn alice_does_not_rebuild_xmr_lock_when_shared_wallet_not_empty() {
         let alice_swap = ctx.alice_next_swap().await;
 
         // `run_until` stops at the first matching state: if Alice ever rebuilds
-        // (BtcLocked), the assertion below fails. Because the shared lock
+        // (XmrReadyToLock), the assertion below fails. Because the shared lock
         // wallet is not empty she must not rebuild, and instead wait out the
         // cancel timelock.
         let alice_state = alice::run_until(
@@ -90,7 +91,7 @@ async fn alice_does_not_rebuild_xmr_lock_when_shared_wallet_not_empty() {
                 matches!(
                     state,
                     AliceState::WaitingForCancelTimelockExpiration { .. }
-                        | AliceState::BtcLocked { .. }
+                        | AliceState::XmrReadyToLock { .. }
                 )
             },
             FixedRate::default(),

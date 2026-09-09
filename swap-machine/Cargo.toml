@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+backoff = { workspace = true }
 bitcoin = { workspace = true }
 bitcoin-wallet = { path = "../bitcoin-wallet" }
 curve25519-dalek-ng = { workspace = true }

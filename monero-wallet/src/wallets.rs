@@ -322,6 +322,21 @@ impl Wallets {
         Ok(!matches!(status, TransactionStatus::Unknown))
     }
 
+    /// Publish a transaction only if it is not already in the daemon's pool or blockchain.
+    pub async fn ensure_transaction_published(&self, tx: &Transaction<NotPruned>) -> Result<()> {
+        use monero_interface::PublishTransaction;
+
+        if self.is_transaction_present(&TxHash::from_tx(tx)).await? {
+            return Ok(());
+        }
+
+        self.rpc_client()
+            .await?
+            .publish_transaction(tx)
+            .await
+            .context("Failed to publish Monero transaction")
+    }
+
     /// Returns true if any of `tx`'s inputs has already been spent by a transaction confirmed
     /// in the blockchain. Combined with `tx` itself not being present on-chain, this indicates
     /// a different transaction spent our inputs (a confirmed double spend).
@@ -357,17 +372,26 @@ impl Wallets {
         public_spend_key: monero_oxide_ext::PublicKey,
         private_view_key: PrivateViewKey,
         start_height: BlockHeight,
+        target_tip: Option<BlockHeight>,
         inner_retry: Option<backoff::ExponentialBackoff>,
     ) -> Result<bool> {
         let rpc_client = self.rpc_client().await?;
         let public_spend_key = public_spend_key.decompress();
         let private_view_key = Zeroizing::new(private_view_key.0.scalar);
 
+        let start_height = usize::try_from(start_height.height)
+            .context("Monero scan start height does not fit in usize")?;
+        let target_tip = target_tip
+            .map(|height| usize::try_from(height.height))
+            .transpose()
+            .context("Monero scan target tip does not fit in usize")?;
+
         monero_wallet_ng::empty::has_received_outputs(
             &rpc_client,
             public_spend_key,
             private_view_key,
-            start_height.height as usize,
+            start_height,
+            target_tip,
             inner_retry,
         )
         .await
