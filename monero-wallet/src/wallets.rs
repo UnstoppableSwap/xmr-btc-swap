@@ -355,6 +355,29 @@ impl Wallets {
         Ok(any_confirmed_spent(&statuses))
     }
 
+    /// Check for a conflicting input spend at the required canonical confirmation depth.
+    pub async fn has_input_spent_with_confirmations(
+        &self,
+        tx: &Transaction<NotPruned>,
+        restore_height: BlockHeight,
+        required_confirmations: u64,
+    ) -> Result<bool> {
+        anyhow::ensure!(required_confirmations > 0, "Rebuild confirmations must be positive");
+        if !self.has_input_confirmed_spent(tx).await? {
+            return Ok(false);
+        }
+
+        monero_wallet_ng::double_spend::has_confirmed_conflict(
+            &self.rpc_client().await?,
+            tx.hash(),
+            &tx_key_images(tx),
+            usize::try_from(restore_height.height).context("Restore height exceeds usize")?,
+            usize::try_from(required_confirmations).context("Rebuild confirmations exceed usize")?,
+        )
+        .await
+        .context("Failed to establish confirmed Monero input conflict depth")
+    }
+
     pub async fn direct_rpc_block_height(&self) -> Result<u64> {
         use monero_daemon_rpc::prelude::ProvidesBlockchainMeta;
         let rpc_client = self.rpc_client().await?;

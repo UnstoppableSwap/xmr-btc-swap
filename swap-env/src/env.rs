@@ -27,6 +27,8 @@ pub struct Config {
     // self-hosted Monero nodes on your own hardware as trusted. If an attacker controls your
     // node and you set this to true, they might be able to steal your funds.
     pub monero_trusted_daemon: bool,
+    /// Required depth of a conflicting input spend before rebuilding a lock transaction.
+    pub monero_lock_rebuild_confirmations: u64,
     #[serde(with = "swap_serde::monero::network")]
     pub monero_network: monero_address::Network,
 }
@@ -75,6 +77,7 @@ impl GetConfig for Mainnet {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
+            monero_lock_rebuild_confirmations: 10,
             monero_network: monero_address::Network::Mainnet,
         }
     }
@@ -97,6 +100,7 @@ impl GetConfig for Testnet {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
+            monero_lock_rebuild_confirmations: 10,
             monero_network: monero_address::Network::Stagenet,
         }
     }
@@ -119,6 +123,7 @@ impl GetConfig for Regtest {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
+            monero_lock_rebuild_confirmations: 10,
             monero_network: monero_address::Network::Mainnet, // yes this is strange
         }
     }
@@ -157,6 +162,7 @@ pub fn new(is_testnet: bool, asb_config: &AsbConfig) -> Config {
 
     Config {
         monero_trusted_daemon: asb_config.monero.trusted_daemon,
+        monero_lock_rebuild_confirmations: asb_config.monero.lock_rebuild_confirmations,
         ..env_config
     }
 }

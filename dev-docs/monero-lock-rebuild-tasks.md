@@ -6,8 +6,10 @@
 
 ## Next items
 
-- [ ] Define the conflicting-spend finality policy before abandoning an original lock transaction (#5).
-  An honest daemon can report a confirmed conflict which a later reorg removes, making the original lock valid again.
+- [x] Require a configurable confirmation depth before abandoning an original lock transaction (#5).
+  `monero.lock_rebuild_confirmations` defaults to 10 and must be positive.
+  Search block input key images from the preserved restore height and recheck canonical depth before and after scanning the shared wallet.
+  This reduces shallow-reorg risk; it does not make a conflicting spend irreversible.
 - [ ] Bound or cancel live scans in `XmrReadyToLock` without treating an interrupted scan as empty (#6b).
   The constructed-state publication/rebuild work is already raced against Bitcoin cancellation.
   Ready-state recovery must account for the distinction between fresh construction and rebuilding.

@@ -47,7 +47,7 @@ async fn alice_rebuilds_xmr_lock_after_confirmed_double_spend() {
 
             // Simulate a confirmed double spend: sweep all of Alice's outputs
             // (including the lock transaction's inputs) to a burn address
-            ctx.sweep_alice_monero_wallet_to_burn().await;
+            let conflicting_spend = ctx.sweep_alice_monero_wallet_to_burn().await;
 
             harness::wait_until("lock transaction inputs spent in blockchain", || async {
                 ctx.alice_monero_wallet
@@ -94,6 +94,20 @@ async fn alice_rebuilds_xmr_lock_after_confirmed_double_spend() {
                 bail!("Expected rebuild to preserve restore height via XmrReadyToLock, got {rebuilt_state}");
             };
             assert_eq!(monero_wallet_restore_blockheight, *original_restore_height);
+
+            // Independently check the real conflicting transaction's depth at rebuild time.
+            use monero_wallet_ng::rpc::{ProvidesTransactionStatus, TransactionStatus};
+            let daemon = ctx.alice_monero_wallet.rpc_client().await?;
+            let mut conflict_hash = [0; 32];
+            hex::decode_to_slice(conflicting_spend.txid, &mut conflict_hash)?;
+            let TransactionStatus::InBlock { block_height } = daemon
+                .transaction_status(conflict_hash)
+                .await?
+            else {
+                bail!("Conflicting spend must be confirmed before rebuilding");
+            };
+            let tip = ctx.alice_monero_wallet.direct_rpc_block_height().await?;
+            assert!(tip >= block_height + 9, "Rebuild requires ten confirmations of the conflicting spend");
 
             ctx.restart_alice().await;
             let alice_swap = ctx.alice_next_swap().await;

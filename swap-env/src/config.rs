@@ -86,6 +86,13 @@ pub struct Monero {
     #[serde(default)]
     // Validated by validate_config: trust requires an explicitly configured daemon_url.
     pub trusted_daemon: bool,
+    /// Required confirmations of a conflicting input spend before rebuilding a lock.
+    #[serde(default = "default_lock_rebuild_confirmations")]
+    pub lock_rebuild_confirmations: u64,
+}
+
+fn default_lock_rebuild_confirmations() -> u64 {
+    10
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -357,6 +364,9 @@ pub const MIN_BTC_REDEEM_FEE_MULTIPLIER: Decimal = Decimal::from_parts(1, 0, 0, 
 pub const MAX_BTC_REDEEM_FEE_MULTIPLIER: Decimal = Decimal::from_parts(10, 0, 0, false, 0); // 10
 
 pub fn validate_config(config: &Config, env_config: crate::env::Config) -> Result<()> {
+    if config.monero.lock_rebuild_confirmations == 0 {
+        bail!("monero.lock_rebuild_confirmations must be positive");
+    }
     if config.monero.trusted_daemon && config.monero.daemon_url.is_none() {
         bail!("monero.trusted_daemon requires an explicit monero.daemon_url; automatically selected public nodes cannot be trusted");
     }
@@ -464,6 +474,7 @@ pub fn query_user_for_initial_config_with_network(
             finality_confirmations: None,
             network: monero_network,
             trusted_daemon: false,
+            lock_rebuild_confirmations: default_lock_rebuild_confirmations(),
         },
         tor: TorConf {
             register_hidden_service,

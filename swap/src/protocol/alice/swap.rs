@@ -454,7 +454,7 @@ where
                     // However, because this has the potential to lock the XMR multiple times,
                     // we have strict security requirements:
                     //  - operator has to explicitly trust the monero node
-                    //  - another tx which shares at least one input has been confirmed spent (double spend)
+                    //  - another tx sharing an input has reached the configured rebuild confirmation depth
                     //  - the Monero lock wallet has not received any funds since the start of the swap
                     //  - not even in mempool
                     // We only proceed with the rebuild when all of these requirements are met.
@@ -471,12 +471,16 @@ where
                         {
                             Some("Lock transaction is present after publication error")
                         } else if !monero_wallet
-                            .has_input_confirmed_spent(&xmr_lock_tx)
+                            .has_input_spent_with_confirmations(
+                                &xmr_lock_tx,
+                                monero_wallet_restore_blockheight,
+                                env_config.monero_lock_rebuild_confirmations,
+                            )
                             .await
-                            .context("Failed to check confirmed Monero lock input spend")
+                            .context("Failed to check Monero lock input conflict depth")
                             .map_err(backoff::Error::transient)?
                         {
-                            Some("Lock transaction has no confirmed double spend")
+                            Some("Lock transaction has no sufficiently confirmed double spend")
                         } else if state3
                             .shared_wallet_has_received_outputs(
                                 &monero_wallet,
@@ -496,12 +500,16 @@ where
                         {
                             Some("Lock transaction is present after scanning shared wallet")
                         } else if !monero_wallet
-                            .has_input_confirmed_spent(&xmr_lock_tx)
+                            .has_input_spent_with_confirmations(
+                                &xmr_lock_tx,
+                                monero_wallet_restore_blockheight,
+                                env_config.monero_lock_rebuild_confirmations,
+                            )
                             .await
-                            .context("Failed to recheck confirmed Monero lock input spend after scanning shared wallet")
+                            .context("Failed to recheck Monero lock input conflict depth after scanning shared wallet")
                             .map_err(backoff::Error::transient)?
                         {
-                            Some("Lock transaction has no confirmed double spend after scanning shared wallet")
+                            Some("Lock transaction has no sufficiently confirmed double spend after scanning shared wallet")
                         } else {
                             None
                         };
@@ -512,7 +520,7 @@ where
                             tracing::warn!(
                                 %swap_id,
                                 %xmr_lock_tx_hash,
-                                "Trusted Monero daemon reports the lock transaction's inputs were already spent by a confirmed transaction. Rebuilding the lock transaction."
+                                "Trusted Monero daemon reports a conflicting input spend at the required confirmation depth. Rebuilding the lock transaction."
                             );
 
                             return Ok(AliceState::XmrReadyToLock {

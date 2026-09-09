@@ -52,6 +52,18 @@ fn loaded_trust_setting_is_applied_and_validated() {
 }
 
 #[test]
+fn rebuild_confirmations_default_override_and_validation() {
+    for (options, expected) in [("", 10), ("lock_rebuild_confirmations = 5", 5)] {
+        let config = config(options);
+        let runtime = env::new(false, &config);
+        assert_eq!(runtime.monero_lock_rebuild_confirmations, expected);
+        validate_config(&config, runtime).unwrap();
+    }
+    let config = config("lock_rebuild_confirmations = 0");
+    assert!(validate_config(&config, env::new(false, &config)).is_err());
+}
+
+#[test]
 fn public_pool_remains_available_without_trust() {
     let config = config("");
     validate_config(&config, env::new(false, &config)).unwrap();
