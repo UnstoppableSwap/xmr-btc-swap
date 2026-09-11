@@ -185,6 +185,10 @@ where
             state3,
             monero_wallet_restore_blockheight,
         } => {
+            let tx_lock_status_subscription = bitcoin_wallet
+                .subscribe_to(Box::new(state3.tx_lock.clone()))
+                .await;
+
             // Sometimes locking the Monero can fail e.g due to the daemon not being fully synced
             // We will retry indefinitely to lock the Monero funds, until either:
             // - the cancel timelock expires
@@ -208,13 +212,20 @@ where
                         return Ok(None);
                     }
 
-                    let has_received_outputs = state3.shared_wallet_has_received_outputs(
-                        &monero_wallet,
-                        monero_wallet_restore_blockheight,
-                        None,
-                    )
-                    .await
-                    .map_err(backoff::Error::transient)?;
+                    let has_received_outputs = tokio::select! {
+                        biased;
+                        result = tx_lock_status_subscription.wait_until_confirmed_with(state3.cancel_timelock) => {
+                            result
+                                .context("Failed to watch Bitcoin cancel timelock while scanning before construction")
+                                .map_err(backoff::Error::transient)?;
+                            return Ok(None);
+                        }
+                        result = state3.shared_wallet_has_received_outputs(
+                            &monero_wallet,
+                            monero_wallet_restore_blockheight,
+                            None,
+                        ) => result.map_err(backoff::Error::transient)?,
+                    };
 
                     if has_received_outputs {
                         return Err(backoff::Error::permanent(anyhow::anyhow!(
@@ -300,20 +311,23 @@ where
                         env_config.monero_lock_retry_timeout.as_secs()
                     );
 
-                    let has_received_outputs = state3
-                        .shared_wallet_has_received_outputs(
+                    let has_received_outputs = tokio::select! {
+                        biased;
+                        result = tx_lock_status_subscription.wait_until_confirmed_with(state3.cancel_timelock) => {
+                            result.context("Failed to watch Bitcoin cancel timelock while scanning before early refund")?;
+                            return Ok(AliceState::SafelyAborted);
+                        }
+                        result = state3.shared_wallet_has_received_outputs(
                             &monero_wallet,
                             monero_wallet_restore_blockheight,
                             Some(
                                 backoff::ExponentialBackoffBuilder::new()
-                                    .with_max_elapsed_time(Some(
-                                        env_config.monero_lock_retry_timeout,
-                                    ))
+                                    .with_max_elapsed_time(Some(env_config.monero_lock_retry_timeout))
                                     .with_max_interval(Duration::from_secs(30))
                                     .build(),
                             ),
-                        )
-                        .await?;
+                        ) => result?,
+                    };
 
                     if has_received_outputs {
                         bail!("Shared Monero wallet is not empty");

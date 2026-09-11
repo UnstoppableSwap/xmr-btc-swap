@@ -10,9 +10,10 @@
   `monero.lock_rebuild_confirmations` defaults to 10 and must be positive.
   Search block input key images from the preserved restore height and recheck canonical depth before and after scanning the shared wallet.
   This reduces shallow-reorg risk; it does not make a conflicting spend irreversible.
-- [ ] Bound or cancel live scans in `XmrReadyToLock` without treating an interrupted scan as empty (#6b).
-  The constructed-state publication/rebuild work is already raced against Bitcoin cancellation.
-  Ready-state recovery must account for the distinction between fresh construction and rebuilding.
+- [x] Cancel live scans in `XmrReadyToLock` when the Bitcoin cancel timelock expires (#6b).
+  Both pre-construction and pre-early-refund scans are raced against cancellation and lead to `SafelyAborted` when cancellation wins.
+  Interrupted scans never establish emptiness or authorize early refund.
+  This preserves the ready state's existing abort policy; the deferred recovery/finality caveats below still apply.
 - [ ] Refresh obsolete mempool snapshots when transactions disappear between hash enumeration and fetching (#7).
   Reconcile the chain as well; do not silently ignore missing transactions.
 
