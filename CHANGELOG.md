@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - GUI: Support outbound connections to makers through libp2p circuit relays.
+- ASB: Fix concurrent swaps selecting the same Monero output when building their lock transactions,
+  which turned the losing swap's lock transaction into a permanent double-spend
+  and left the taker's swap stuck until it refunded.
+  A concurrent swap the maker can no longer fund is now refunded early,
+  instead of building a doomed lock transaction that wedges the swap.
 
 ## [4.14.0] - 2026-08-22
 

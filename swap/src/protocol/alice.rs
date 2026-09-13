@@ -10,6 +10,7 @@ use swap_env::env::Config;
 pub use swap_machine::alice::*;
 use uuid::Uuid;
 
+pub mod lock_phase;
 pub mod swap;
 
 pub struct Swap {

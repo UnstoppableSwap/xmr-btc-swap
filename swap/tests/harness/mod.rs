@@ -47,10 +47,11 @@ use uuid::Uuid;
 ///
 /// If use_subaddress is true, we will use a subaddress for the developer tip. We do this
 /// because using a subaddress changes things about the tx keys involved
-pub async fn setup_test<T, F, C>(
+pub async fn setup_test_funded<T, F, C>(
     _config: C,
     developer_tip_ratio: Option<(Decimal, bool)>,
     refund_policy: Option<RefundPolicy>,
+    alice_xmr_outputs: u64,
     testfn: T,
 ) where
     T: Fn(TestContext) -> F,
@@ -126,7 +127,7 @@ pub async fn setup_test<T, F, C>(
     };
 
     let alice_starting_balances =
-        StartingBalances::new(bitcoin::Amount::ZERO, xmr_amount, Some(10));
+        StartingBalances::new(bitcoin::Amount::ZERO, xmr_amount, Some(alice_xmr_outputs));
     let alice_seed = Seed::random().unwrap();
     let alice_db_path = NamedTempFile::new().unwrap().path().to_path_buf();
     let alice_config_path = alice_db_path.with_extension("config.toml");
@@ -295,6 +296,22 @@ ask_spread = "0"
     };
 
     testfn(test).await.unwrap()
+}
+
+/// Thin wrapper over [`setup_test_funded`] with the default maker Monero balance
+/// (ten 1-XMR outputs), used by every test that does not need to constrain how
+/// much unlocked XMR Alice holds.
+pub async fn setup_test<T, F, C>(
+    config: C,
+    developer_tip_ratio: Option<(Decimal, bool)>,
+    refund_policy: Option<RefundPolicy>,
+    testfn: T,
+) where
+    T: Fn(TestContext) -> F,
+    F: Future<Output = Result<()>>,
+    C: GetConfig,
+{
+    setup_test_funded(config, developer_tip_ratio, refund_policy, 10, testfn).await
 }
 
 async fn init_containers(cli: &Cli) -> (Monero, Containers<'_>) {
