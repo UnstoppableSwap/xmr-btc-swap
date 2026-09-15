@@ -19,8 +19,10 @@
   Carry the optional proof through Bitcoin cancellation and key recovery.
   Without a proof, stop in `XmrRefundable` before retrying Monero refund construction; preserve the refund key and restore height.
   Existing populated proofs remain readable; older binaries cannot read new recovery states with null proofs.
-- [ ] Refresh obsolete mempool snapshots when transactions disappear between hash enumeration and fetching (#7).
-  Reconcile the chain as well; do not silently ignore missing transactions.
+- [x] Refresh obsolete mempool snapshots when transactions disappear between hash enumeration and fetching (#7).
+  Retry the whole mempool scan with fresh hashes under the supplied `inner_retry` budget, without per-batch retries.
+  `None` means one attempt; a changed tip height or hash aborts retries immediately.
+  Block scanning remains in the caller.
 
 ## Deferred: wallet-wide recovery and restore-height restructuring (#4)
 
