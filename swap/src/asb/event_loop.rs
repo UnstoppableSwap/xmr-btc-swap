@@ -913,7 +913,7 @@ where
         // Therefore it is safe to reveal s_a to let him redeem the Monero
         let State::Alice(AliceState::BtcPunished {
             state3,
-            transfer_proof,
+            transfer_proof: Some(transfer_proof),
             ..
         }) = swap_state
         else {

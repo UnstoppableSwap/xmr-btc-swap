@@ -307,7 +307,7 @@ where
                     tracing::error!(
                         swap_id = %swap_id,
                         error = ?e,
-                        "Failed to lock Monero within {} seconds. We will do an early refund of the Bitcoin. We didn't lock any Monero funds so this is safe.",
+                        "Failed to lock Monero within {} seconds. Checking shared wallet before deciding recovery.",
                         env_config.monero_lock_retry_timeout.as_secs()
                     );
 
@@ -326,14 +326,24 @@ where
                                     .with_max_interval(Duration::from_secs(30))
                                     .build(),
                             ),
-                        ) => result?,
+                        ) => result,
                     };
 
-                    if has_received_outputs {
-                        bail!("Shared Monero wallet is not empty");
+                    match has_received_outputs {
+                        Ok(false) => return Ok(AliceState::BtcEarlyRefundable { state3 }),
+                        Ok(true) => {
+                            tracing::warn!(%swap_id, "Shared Monero wallet received outputs; waiting for cancellation");
+                        }
+                        Err(error) => {
+                            tracing::warn!(%swap_id, %error, "Could not establish shared wallet emptiness; waiting for cancellation");
+                        }
                     }
 
-                    AliceState::BtcEarlyRefundable { state3 }
+                    AliceState::WaitingForCancelTimelockExpiration {
+                        monero_wallet_restore_blockheight,
+                        transfer_proof: None,
+                        state3,
+                    }
                 }
             }
         }
@@ -431,7 +441,7 @@ where
                     ) {
                         return Ok(AliceState::WaitingForCancelTimelockExpiration {
                             monero_wallet_restore_blockheight,
-                            transfer_proof: transfer_proof.clone(),
+                            transfer_proof: Some(transfer_proof.clone()),
                             state3: state3.clone(),
                         });
                     }
@@ -474,7 +484,9 @@ where
                     // We only proceed with the rebuild when all of these requirements are met.
 
                     if env_config.monero_trusted_daemon {
-                        tracing::info!("Checking whether the failed Monero lock transaction can be rebuilt");
+                        tracing::info!(
+                            "Checking whether the failed Monero lock transaction can be rebuilt"
+                        );
                         // Keep the cheap input check before scanning. Recheck both absence and
                         // spending afterwards because the daemon's view may change during the scan.
                         let reason = if monero_wallet
@@ -529,7 +541,9 @@ where
                         };
 
                         if let Some(reason) = reason {
-                            tracing::info!("Not rebuilding XMR lock transaction, because it's not safe: {reason}");
+                            tracing::info!(
+                                "Not rebuilding XMR lock transaction, because it's not safe: {reason}"
+                            );
                         } else {
                             tracing::warn!(
                                 %swap_id,
@@ -557,7 +571,7 @@ where
                     // Publication may have succeeded even if its future is interrupted.
                     AliceState::WaitingForCancelTimelockExpiration {
                         monero_wallet_restore_blockheight,
-                        transfer_proof: transfer_proof.clone(),
+                        transfer_proof: Some(transfer_proof.clone()),
                         state3: state3.clone(),
                     }
                 }
@@ -603,7 +617,7 @@ where
             }
             _ => AliceState::CancelTimelockExpired {
                 monero_wallet_restore_blockheight,
-                transfer_proof,
+                transfer_proof: Some(transfer_proof),
                 state3,
             },
         },
@@ -655,7 +669,7 @@ where
                     result?;
                     AliceState::CancelTimelockExpired {
                         monero_wallet_restore_blockheight,
-                        transfer_proof,
+                        transfer_proof: Some(transfer_proof),
                         state3,
                     }
                 }
@@ -676,7 +690,7 @@ where
                     result?;
                     AliceState::CancelTimelockExpired {
                         monero_wallet_restore_blockheight,
-                        transfer_proof,
+                        transfer_proof: Some(transfer_proof),
                         state3,
                     }
                 }
@@ -732,7 +746,7 @@ where
 
                     return Ok(AliceState::WaitingForCancelTimelockExpiration {
                         monero_wallet_restore_blockheight,
-                        transfer_proof,
+                        transfer_proof: Some(transfer_proof),
                         state3,
                     });
                 }
@@ -805,7 +819,7 @@ where
 
                     AliceState::WaitingForCancelTimelockExpiration {
                         monero_wallet_restore_blockheight,
-                        transfer_proof,
+                        transfer_proof: Some(transfer_proof),
                         state3,
                     }
                 }
@@ -993,6 +1007,9 @@ where
             spend_key,
             state3,
         } => {
+            let transfer_proof = transfer_proof.context(
+                "We have the refund key, but recovery of unknown funds is not yet implemented. Funds are safe.",
+            )?;
             let xmr_refund_tx = retry(
                 "Refund Monero",
                 || async {

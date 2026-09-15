@@ -27,13 +27,15 @@ pub async fn punish(
         | AliceState::XmrLocked {state3, transfer_proof, ..}
         | AliceState::XmrLockTransferProofSent {state3, transfer_proof, ..}
         | AliceState::EncSigLearned {state3, transfer_proof, ..}
-        | AliceState::WaitingForCancelTimelockExpiration {state3, transfer_proof, ..}
+        | AliceState::BtcRedeemTransactionPublished { state3, transfer_proof, .. } => {
+            (state3, Some(transfer_proof))
+        }
+        AliceState::WaitingForCancelTimelockExpiration {state3, transfer_proof, ..}
         | AliceState::CancelTimelockExpired {state3, transfer_proof, ..}
         // Punish possible due to cancel transaction already being published
         | AliceState::BtcCancelled {state3, transfer_proof, ..}
         | AliceState::BtcPunishable {state3, transfer_proof, ..}
         // The state machine is in a state where punish is theoretically impossible but we try and punish anyway as this is what the user wants
-        | AliceState::BtcRedeemTransactionPublished { state3, transfer_proof, .. }
         | AliceState::BtcRefunded { state3, transfer_proof,.. } => { (state3, transfer_proof) }
         | AliceState::BtcPartiallyRefunded { state3, transfer_proof,.. } => { (state3, transfer_proof) }
         | AliceState::XmrRefundable { state3, transfer_proof,.. } => { (state3, transfer_proof) }

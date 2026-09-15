@@ -72,7 +72,7 @@ pub enum AliceState {
     BtcRedeemed,
     BtcCancelled {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         state3: Box<State3>,
     },
     BtcEarlyRefunded(Box<State3>),
@@ -81,19 +81,19 @@ pub enum AliceState {
     // we need to refund ourself regardless.
     BtcRefunded {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         spend_key: monero_oxide_ext::PrivateKey,
         state3: Box<State3>,
     },
     BtcPartiallyRefunded {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         spend_key: monero::PrivateKey,
         state3: Box<State3>,
     },
     XmrRefundable {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         spend_key: monero::PrivateKey,
         state3: Box<State3>,
     },
@@ -135,22 +135,22 @@ pub enum AliceState {
     },
     WaitingForCancelTimelockExpiration {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         state3: Box<State3>,
     },
     CancelTimelockExpired {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         state3: Box<State3>,
     },
     BtcPunishable {
         monero_wallet_restore_blockheight: BlockHeight,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
         state3: Box<State3>,
     },
     BtcPunished {
         state3: Box<State3>,
-        transfer_proof: TransferProof,
+        transfer_proof: Option<TransferProof>,
     },
     SafelyAborted,
 }

@@ -7,20 +7,23 @@
 ## Next items
 
 - [x] Require a configurable confirmation depth before abandoning an original lock transaction (#5).
-  `monero.lock_rebuild_confirmations` defaults to 10 and must be positive.
+  `monero.lock_rebuild_confirmations` defaults to 15 and must be positive.
   Search block input key images from the preserved restore height and recheck canonical depth before and after scanning the shared wallet.
   This reduces shallow-reorg risk; it does not make a conflicting spend irreversible.
 - [x] Cancel live scans in `XmrReadyToLock` when the Bitcoin cancel timelock expires (#6b).
   Both pre-construction and pre-early-refund scans are raced against cancellation and lead to `SafelyAborted` when cancellation wins.
   Interrupted scans never establish emptiness or authorize early refund.
   This preserves the ready state's existing abort policy; the deferred recovery/finality caveats below still apply.
+- [x] Keep supervising ready-state recovery when received outputs or scan failures prevent construction/early refund (#4).
+  Enter `WaitingForCancelTimelockExpiration` with no transfer proof and stop reserving additional Monero.
+  Carry the optional proof through Bitcoin cancellation and key recovery.
+  Without a proof, stop in `XmrRefundable` before retrying Monero refund construction; preserve the refund key and restore height.
+  Existing populated proofs remain readable; older binaries cannot read new recovery states with null proofs.
 - [ ] Refresh obsolete mempool snapshots when transactions disappear between hash enumeration and fetching (#7).
   Reconcile the chain as well; do not silently ignore missing transactions.
 
 ## Deferred: wallet-wide recovery and restore-height restructuring (#4)
 
-- [ ] Keep supervising ready-state recovery when received outputs or scan failures prevent construction/early refund.
-  Do not leave liquidity permanently reserved after Bob cancels/refunds.
 - [ ] Investigate capturing the restore height during swap setup and carrying it in `State3`.
   Preserve compatibility with existing persisted swaps; never replace an unknown historical height with the current tip.
 - [ ] Generalize received-output discovery, retaining an early-exit existence-check wrapper.
