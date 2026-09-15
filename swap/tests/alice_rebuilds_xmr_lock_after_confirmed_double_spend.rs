@@ -107,7 +107,7 @@ async fn alice_rebuilds_xmr_lock_after_confirmed_double_spend() {
                 bail!("Conflicting spend must be confirmed before rebuilding");
             };
             let tip = ctx.alice_monero_wallet.direct_rpc_block_height().await?;
-            assert!(tip >= block_height + 9, "Rebuild requires ten confirmations of the conflicting spend");
+            assert!(tip >= block_height + 14, "Rebuild requires fifteen confirmations of the conflicting spend");
 
             ctx.restart_alice().await;
             let alice_swap = ctx.alice_next_swap().await;

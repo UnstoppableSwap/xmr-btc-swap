@@ -91,7 +91,7 @@ impl ProvidesScannableBlocks for Blocks {
 
 #[tokio::test]
 async fn requires_exact_confirmation_depth() {
-    for (tip, expected) in [(18, false), (19, true), (20, true)] {
+    for (tip, expected) in [(23, false), (24, true), (25, true)] {
         let provider = Blocks {
             tip,
             conflict_height: 10,
@@ -99,7 +99,7 @@ async fn requires_exact_confirmation_depth() {
             fail_fetch: false,
         };
         assert_eq!(
-            has_confirmed_conflict(&provider, ORIGINAL, &[CompressedPoint::G.to_bytes()], 0, 10)
+            has_confirmed_conflict(&provider, ORIGINAL, &[CompressedPoint::G.to_bytes()], 0, 15)
                 .await
                 .unwrap(),
             expected

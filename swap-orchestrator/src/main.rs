@@ -370,7 +370,7 @@ fn main() {
                 // This means that we will use the default set in swap-env/src/env.rs
                 finality_confirmations: None,
                 trusted_daemon: false,
-                lock_rebuild_confirmations: 10,
+                lock_rebuild_confirmations: 15,
             },
             tor: TorConf {
                 register_hidden_service: tor_hidden_service,

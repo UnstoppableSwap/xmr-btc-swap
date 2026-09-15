@@ -53,7 +53,7 @@ fn loaded_trust_setting_is_applied_and_validated() {
 
 #[test]
 fn rebuild_confirmations_default_override_and_validation() {
-    for (options, expected) in [("", 10), ("lock_rebuild_confirmations = 5", 5)] {
+    for (options, expected) in [("", 15), ("lock_rebuild_confirmations = 5", 5)] {
         let config = config(options);
         let runtime = env::new(false, &config);
         assert_eq!(runtime.monero_lock_rebuild_confirmations, expected);

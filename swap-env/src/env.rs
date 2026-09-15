@@ -77,7 +77,7 @@ impl GetConfig for Mainnet {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
-            monero_lock_rebuild_confirmations: 10,
+            monero_lock_rebuild_confirmations: 15,
             monero_network: monero_address::Network::Mainnet,
         }
     }
@@ -100,7 +100,7 @@ impl GetConfig for Testnet {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
-            monero_lock_rebuild_confirmations: 10,
+            monero_lock_rebuild_confirmations: 15,
             monero_network: monero_address::Network::Stagenet,
         }
     }
@@ -123,7 +123,7 @@ impl GetConfig for Regtest {
             monero_finality_confirmations: 10,
             monero_double_spend_safe_confirmations: 10,
             monero_trusted_daemon: false,
-            monero_lock_rebuild_confirmations: 10,
+            monero_lock_rebuild_confirmations: 15,
             monero_network: monero_address::Network::Mainnet, // yes this is strange
         }
     }

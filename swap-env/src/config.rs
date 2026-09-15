@@ -92,7 +92,7 @@ pub struct Monero {
 }
 
 fn default_lock_rebuild_confirmations() -> u64 {
-    10
+    15
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
